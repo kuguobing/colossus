@@ -101,7 +101,6 @@ class LoadBalancingClient[I,O] (
     
   private def addClient(address: InetSocketAddress, regen: Boolean): ServiceClient[I,O] = {
     val client = generator(address)
-    client.connect()
     clients.append(client)
     regeneratePermutations()
     client

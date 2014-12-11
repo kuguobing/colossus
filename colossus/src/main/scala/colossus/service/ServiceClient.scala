@@ -5,6 +5,7 @@ import java.net.InetSocketAddress
 
 import akka.actor._
 import akka.event.Logging
+import akka.util.ByteString
 import colossus.core._
 import colossus.metrics._
 
@@ -172,16 +173,14 @@ class ServiceClient[I,O](
     if (canReconnect) ConnectionStatus.Connecting else ConnectionStatus.NotConnected
   )
 
-  def connect() {
+  override def onBind(){
     if(!manuallyDisconnected){
+      log.info(s"$client {id.get} connecting to $address")
       worker ! Connect(address, _ => this)
     }else{
-      throw new StaleClientException("This client has already been manually disconnected, create a new one.")
+      throw new StaleClientException("This client has already been manually disconnected and cannot be reused, create a new one.")
     }
   }
-
-  //todo: this should now auto-connect on binding
-  //override def onBind(){}
 
   /**
    * Allow any requests in transit to complete, but cancel all pending requests
@@ -223,21 +222,26 @@ class ServiceClient[I,O](
 
   def receivedData(data: DataBuffer) {
     val now = System.currentTimeMillis
-    codec.decodeAll(data){response =>
-      try {
-        val source = sentBuffer.dequeue()
-        latency.add(tags = hTags, value = (now - source.start).toInt) //notice only grouping by host for now
-        source.handler(Success(response))
-        requests.hit(tags = hpTags)
-      } catch {
-        case e: java.util.NoSuchElementException => {
-          throw new DataException(s"No Request for response ${response.toString}!")
+    if (writer.isEmpty) {
+      val d = ByteString(data.takeAll)
+      log.error(s"Client $name($address) received data while not connected!: ${d.utf8String}")
+    } else {
+      codec.decodeAll(data){response =>
+        try {
+          val source = sentBuffer.dequeue()
+          latency.add(tags = hTags, value = (now - source.start).toInt) //notice only grouping by host for now
+          source.handler(Success(response))
+          requests.hit(tags = hpTags)
+        } catch {
+          case e: java.util.NoSuchElementException => {
+            throw new DataException(s"No Request for response ${response.toString}!")
+          }
         }
+        
       }
-      
+      checkGracefulDisconnect()
+      checkPendingBuffer()
     }
-    checkGracefulDisconnect()
-    checkPendingBuffer()
   }
 
   def receivedMessage(message: Any, sender: ActorRef) {
@@ -248,7 +252,7 @@ class ServiceClient[I,O](
   }
 
   def connected(endpoint: WriteEndpoint) {
-    log.info(s"Connected to $address")
+    log.info(s"${id.get} Connected to $address")
     codec.reset()    
     writer = Some(endpoint)
     connectionAttempts = 0
@@ -283,7 +287,8 @@ class ServiceClient[I,O](
 
   override protected def connectionLost(cause : DisconnectError) {
     purgeBuffers(new NotConnectedException("Connection lost"))
-    log.warning(s"connection to ${address.toString} lost: $cause")
+    log.warning(s"${id.get} connection to ${address.toString} lost: $cause")
+    (new Exception).printStackTrace()
     disconnects.hit(tags = hpTags)
     attemptReconnect()
   }

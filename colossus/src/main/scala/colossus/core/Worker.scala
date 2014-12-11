@@ -464,6 +464,7 @@ private[colossus] class Worker(config: WorkerConfig) extends Actor with ActorMet
             key.attachment match {
               case c: Connection => {
                 //connection reset by peer, no need to log
+                log.warning(s"IO Error on ${c.id}: ${t.getMessage}")
                 unregisterConnection(c, DisconnectCause.Closed)
               }
             }
@@ -499,7 +500,7 @@ private[colossus] class Worker(config: WorkerConfig) extends Actor with ActorMet
               unregisterConnection(c, DisconnectCause.Error(j))
             }
             case other: Throwable => {
-              log.warning("Error handling write: ${other.getClass.getName} : ${other.getMessage}")
+              log.warning(s"Error handling write: ${other.getClass.getName} : ${other.getMessage}")
             }
           }
           case _ => {}
