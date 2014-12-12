@@ -255,7 +255,7 @@ class ServerSpec extends ColossusSpec {
         withIOSystemAndServer((s,w) => new SleepyDelegator(s,w), waitTime = 10.seconds)((io, sys) =>())
       }
 
-      "switch to high water timeout when connection count passes the high water mark" taggedAs(Tag("tag")) in {
+      "switch to high water timeout when connection count passes the high water mark" in {
         //for now this test only checks to see that the server switched its status
         withIOSystem { implicit io =>
           val config = ServerConfig(

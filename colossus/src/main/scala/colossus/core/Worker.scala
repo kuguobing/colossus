@@ -145,10 +145,11 @@ class WorkerItemManager(worker: WorkerRef, log: LoggingAdapter) {
   def bind(workerItem: WorkerItem) {
     if (workerItem.isBound) {
       log.error(s"Attempted to bind worker ${workerItem.binding} that was already bound")
+    } else {
+      val id = newId()
+      workerItems(id) = workerItem
+      workerItem.setBind(id, worker)
     }
-    val id = newId()
-    workerItems(id) = workerItem
-    workerItem.setBind(id, worker)
   }
 
   def unbind(id: Long) {
