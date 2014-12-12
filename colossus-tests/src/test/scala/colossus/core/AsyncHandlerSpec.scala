@@ -34,6 +34,8 @@ class AsyncHandlerSpec extends ColossusSpec {
 
     "send Connected event" in {
       withHandler{ case (endpoint, handler, probe, worker) => 
+        handler.setBind(34, worker)
+        probe.expectMsg(Bound(34))
         handler.connected(endpoint)
         probe.expectMsg(Connected)
       }
@@ -41,6 +43,8 @@ class AsyncHandlerSpec extends ColossusSpec {
 
     "send terminated event" in {
       withHandler{ case (endpoint, handler, probe, worker) => 
+        handler.setBind(34, worker)
+        probe.expectMsg(Bound(34))
         handler.connected(endpoint)
         probe.expectMsg(Connected)
         endpoint.disrupt()
@@ -50,6 +54,8 @@ class AsyncHandlerSpec extends ColossusSpec {
 
     "send write ack on success" in {
       withHandler{ case (endpoint, handler, probe, worker) => 
+        handler.setBind(34, worker)
+        probe.expectMsg(Bound(34))
         handler.connected(endpoint)
         probe.expectMsg(Connected)
         handler.receivedMessage(Write(ByteString("HELLO"), AckAll), probe.ref)
@@ -59,6 +65,8 @@ class AsyncHandlerSpec extends ColossusSpec {
 
     "send partial ack and ReadyForData" in {
       withHandler{ case (endpoint, handler, probe, worker) => 
+        handler.setBind(34, worker)
+        probe.expectMsg(Bound(34))
         handler.connected(endpoint)
         probe.expectMsg(Connected)
         handler.receivedMessage(Write(ByteString("123456789012345"), AckAll), probe.ref)
@@ -71,6 +79,8 @@ class AsyncHandlerSpec extends ColossusSpec {
 
     "send zero ack" in {
       withHandler{ case (endpoint, handler, probe, worker) => 
+        handler.setBind(34, worker)
+        probe.expectMsg(Bound(34))
         handler.connected(endpoint)
         probe.expectMsg(Connected)
         handler.receivedMessage(Write(ByteString("123456789012345"), AckAll), probe.ref)

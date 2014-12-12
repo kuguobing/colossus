@@ -66,7 +66,7 @@ class ServerSpec extends ColossusSpec {
   }
 
   "Server" must {
-    "attach to a system and start" taggedAs(Tag("tag")) in {
+    "attach to a system and start" in {
       withIOSystem { implicit io =>
         val server = Server.basic("echo", TEST_PORT, () => new EchoHandler)
         waitForServer(server)
@@ -255,16 +255,16 @@ class ServerSpec extends ColossusSpec {
         withIOSystemAndServer((s,w) => new SleepyDelegator(s,w), waitTime = 10.seconds)((io, sys) =>())
       }
 
-      "switch to high water timeout when connection count passes the high water mark" in {
+      "switch to high water timeout when connection count passes the high water mark" taggedAs(Tag("tag")) in {
         //for now this test only checks to see that the server switched its status
         withIOSystem { implicit io =>
           val config = ServerConfig(
             name = "highWaterTest",
             settings = ServerSettings(
               port = TEST_PORT,
-              maxConnections = 10,
-              lowWatermarkPercentage = 0.60,
-              highWatermarkPercentage = 0.80,
+              maxConnections = 2,
+              lowWatermarkPercentage = 0.00,
+              highWatermarkPercentage = 0.50,
               highWaterMaxIdleTime = 50.milliseconds,
               maxIdleTime = 1.hour
             ),
@@ -272,9 +272,10 @@ class ServerSpec extends ColossusSpec {
           )
           val server = Server(config)
           withServer(server) {
-            val idleConnections = for{i <- 1 to 9} yield TestClient(server.system, TEST_PORT, connectionAttempts = PollingDuration.NoRetry)
-            TestUtil.expectServerConnections(server, 9)
-            Thread.sleep(1000) //have to wait a second since that's how often the check it done
+            val idleConnection1 = TestClient(server.system, TEST_PORT, connectionAttempts = PollingDuration.NoRetry)
+            TestUtil.expectServerConnections(server, 1)
+            val idleConnection2 = TestClient(server.system, TEST_PORT, connectionAttempts = PollingDuration.NoRetry)
+            Thread.sleep(500) //have to wait a second since that's how often the check it done
             expectConnections(server, 0)
           }
         }
