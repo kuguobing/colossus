@@ -16,13 +16,13 @@ class WorkerItemSpec extends ColossusSpec {
     "bind to a worker" in {
       withIOSystem{io => 
         val probe = TestProbe()
-        class MyItem extends BindableWorkerItem {
+        class MyItem extends WorkerItem {
           override def onBind() {
             probe.ref ! "BOUND"
           }
           def receivedMessage(message: Any, sender: ActorRef){}
         }
-        io ! IOCommand.BindWorkerItem(() => new MyItem)
+        io ! IOCommand.BindWorkerItem(new MyItem)
         probe.expectMsg(100.milliseconds, "BOUND")
       }
     }

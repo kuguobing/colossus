@@ -11,6 +11,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.util.ByteString
 
+import org.scalatest._
+
 class ServerSpec extends ColossusSpec {
 
   def expectConnections(server: ServerRef, num: Int) {
@@ -64,7 +66,7 @@ class ServerSpec extends ColossusSpec {
   }
 
   "Server" must {
-    "attach to a system and start" in {
+    "attach to a system and start" taggedAs(Tag("tag")) in {
       withIOSystem { implicit io =>
         val server = Server.basic("echo", TEST_PORT, () => new EchoHandler)
         waitForServer(server)
